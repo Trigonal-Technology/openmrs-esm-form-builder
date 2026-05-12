@@ -7,6 +7,17 @@ interface SavePayload {
   version?: string;
   published?: boolean;
   encounterType?: string;
+  /** nidancore JSON rules — object or array; omit or null to clear on update */
+  formRules?: unknown | null;
+}
+
+/** Clobdata stores the form engine schema only — omit nidancore-only `formRules` when uploading JSON schema. */
+export function schemaWithoutFormRulesForClobdataUpload(schema: Schema): Schema {
+  if (!schema || typeof schema !== 'object') {
+    return schema;
+  }
+  const { formRules: _omit, ...rest } = schema;
+  return rest as Schema;
 }
 
 export async function deleteClobdata(valueReference: string): Promise<FetchResponse<Schema>> {
@@ -77,9 +88,10 @@ export async function updateForm(
   version: string,
   description: string,
   encounterTypeUuid: string,
+  formRules?: unknown | null,
 ): Promise<FetchResponse<Schema>> {
   const abortController = new AbortController();
-  const body = {
+  const body: Record<string, unknown> = {
     name: name,
     version: version,
     description: description,
@@ -87,6 +99,9 @@ export async function updateForm(
       uuid: encounterTypeUuid,
     },
   };
+  if (formRules !== undefined) {
+    body.formRules = formRules;
+  }
 
   const response: FetchResponse = await openmrsFetch(`${restBaseUrl}/form/${formUuid}`, {
     method: 'POST',
@@ -104,6 +119,7 @@ export async function saveNewForm(
   published?: boolean,
   description?: string,
   encounterType?: string,
+  formRules?: unknown | null,
 ): Promise<Form> {
   const abortController = new AbortController();
 
@@ -116,6 +132,9 @@ export async function saveNewForm(
 
   if (encounterType) {
     body.encounterType = encounterType;
+  }
+  if (formRules !== undefined) {
+    body.formRules = formRules;
   }
   const headers = {
     'Content-Type': 'application/json',

@@ -39,9 +39,23 @@ import { useForm } from '@hooks/useForm';
 import { useLanguageOptions } from '@hooks/getLanguageOptionsFromSession';
 import type { IMarker } from 'react-ace';
 import type { FormSchema } from '@openmrs/esm-form-engine-lib';
-import type { Schema } from '@types';
+import type { Form, Schema } from '@types';
 import type { ConfigObject } from '../../config-schema';
 import styles from './form-editor.scss';
+
+function schemaFormRulesFromRestPayload(form: Form | undefined): Schema['formRules'] | undefined {
+  if (!form?.formRules) {
+    return undefined;
+  }
+  const r = form.formRules;
+  if (Array.isArray(r)) {
+    return r;
+  }
+  if (typeof r === 'object' && r !== null) {
+    return r as Record<string, unknown>;
+  }
+  return undefined;
+}
 
 interface ErrorProps {
   error: Error;
@@ -181,11 +195,21 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
 
       if (clobdata && Object.keys(clobdata).length > 0) {
         setStatus('schemaLoaded');
-        setSchema(clobdata);
-        localStorage.setItem('formJSON', JSON.stringify(clobdata));
+        const rulesFromRest = schemaFormRulesFromRestPayload(form);
+        const merged = rulesFromRest !== undefined ? { ...clobdata, formRules: rulesFromRest } : clobdata;
+        setSchema(merged);
+        localStorage.setItem('formJSON', JSON.stringify(merged));
       }
     }
   }, [clobdata, form, formUuid, isLoadingClobdata, isLoadingFormOrSchema, launchRestoreDraftSchemaModal, status]);
+
+  /** When metadata loads after clobdata, merge REST `formRules` if the schema JSON had none. */
+  useEffect(() => {
+    if (!formUuid || !schema) return;
+    const rulesFromRest = schemaFormRulesFromRestPayload(form);
+    if (rulesFromRest === undefined || schema.formRules !== undefined) return;
+    setSchema((prev) => (prev ? { ...prev, formRules: rulesFromRest } : prev));
+  }, [form?.formRules, form, formUuid, schema]);
 
   useEffect(() => {
     setStringifiedSchema(JSON.stringify(schema, null, 2));
@@ -483,6 +507,7 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
         <Column lg={8} md={8} sm={4} className={styles.column}>
           <ActionButtons
             schema={schema}
+            stringifiedSchema={stringifiedSchema}
             t={t}
             schemaErrors={errors}
             setPublishedWithErrors={setPublishedWithErrors}

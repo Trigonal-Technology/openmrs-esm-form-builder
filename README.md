@@ -18,23 +18,27 @@ Under the hood, the Form Builder uses the [React form engine](https://www.npmjs.
 
 To set up environment variables for the project, follow these steps:
 
-1. Create a copy of the .env.example file by running the following command:
+1. Create a copy of the example env file by running the following command:
 
     ```bash
     cp example.env .env
     ```
 
-2. Open the newly created .env file in the root of the project.
+2. Open the newly created `.env` file in the root of the project.
 
-3. Add the environment variables you need.
+3. Add the variables you need (see comments in `example.env`):
 
-Note: These variables are currently only used for end-to-end tests.
+    - **`E2E_*`** — used by **Playwright** when you run `yarn test-e2e` (`playwright.config.ts` loads `.env` with `dotenv`).
+    - **`OPENMRS_*` / `NODE_*`** — used by **`yarn start:local`**; the OpenMRS CLI does **not** read `E2E_*` (those stay for E2E only).
+
+The dev script forwards only `OPENMRS_*` and `NODE_*` from `.env` into the `openmrs develop` process so Playwright settings are not mixed with backend URL configuration. For `start:local`, backend is **CLI `--backend`** if you pass it, else **`OPENMRS_BACKEND_URL`**, else **`https://dev2.openmrs.org`**.
 
 ## Local development
 
 ```sh
 yarn  # Installs dependencies
 yarn start  # Launches a dev server
+yarn start:local  # Backend: CLI --backend > .env OPENMRS_BACKEND_URL > https://dev2.openmrs.org (see example.env)
 ```
 
 Once the dev server launches, log in and select a location. You will get redirected to the home page. Once there, you can either:

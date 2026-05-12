@@ -6,6 +6,8 @@ import type { questionTypes } from '@constants';
 // Extend FormSchema to include description property
 export interface FormBuilderSchema extends FormSchema {
   description?: string;
+  /** Optional visibility/context rules stored via nidancore REST (`formRules`), not used by the form engine. */
+  formRules?: Record<string, unknown> | unknown[];
 }
 
 export interface Form {
@@ -20,6 +22,8 @@ export interface Form {
   formFields?: Array<string>;
   display?: string;
   auditInfo: AuditInfo;
+  /** nidancore extension — parsed JSON when present on full representation */
+  formRules?: Record<string, unknown> | unknown[];
 }
 
 export interface FilterProps {

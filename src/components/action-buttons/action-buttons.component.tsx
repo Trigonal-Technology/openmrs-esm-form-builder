@@ -15,7 +15,9 @@ import styles from './action-buttons.scss';
 interface ActionButtonsProps {
   isValidating: boolean;
   onFormValidation: () => Promise<void>;
-  schema: Schema;
+  schema?: Schema;
+  /** Raw schema editor JSON — used to pre-fill `formRules` before "Render changes". */
+  stringifiedSchema: string;
   schemaErrors: Array<MarkerProps>;
   setPublishedWithErrors: (status: boolean) => void;
   setValidationComplete: (validationStatus: boolean) => void;
@@ -41,6 +43,7 @@ function ActionButtons({
   isValidating,
   onFormValidation,
   schema,
+  stringifiedSchema,
   schemaErrors,
   setPublishedWithErrors,
   setValidationComplete,
@@ -126,7 +129,7 @@ function ActionButtons({
 
   return (
     <div className={styles.actionButtons}>
-      <SaveFormModal form={form} schema={schema} />
+      <SaveFormModal form={form} schema={schema} stringifiedSchema={stringifiedSchema} />
 
       <>
         {form && enableFormValidation && (

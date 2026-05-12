@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
   Button,
   ComposedModal,
-  Form,
+  Form as CarbonForm,
   FormGroup,
   InlineLoading,
   ModalBody,
@@ -25,27 +25,27 @@ import {
   deleteResource,
   getResourceUuid,
   saveNewForm,
+  schemaWithoutFormRulesForClobdataUpload,
   updateForm,
   uploadSchema,
 } from '@resources/forms.resource';
-import type { EncounterType, Resource, Schema } from '@types';
+import type { Form, Schema } from '@types';
+import {
+  FORM_VISIBILITY_RULE_KEYS,
+  getFormRulesDisplayText,
+  isFormRulesValidationFailure,
+  validateFormRulesText,
+} from '../../../../utils/form-rules-validation';
 import styles from './save-form.scss';
 
-interface FormGroupData {
-  name: string;
-  uuid: string;
-  version: string;
-  encounterType: EncounterType;
-  description: string;
-  resources: Array<Resource>;
-}
-
 interface SaveFormModalProps {
-  form: FormGroupData;
-  schema: Schema;
+  form?: Form;
+  schema?: Schema;
+  /** Raw schema JSON from the editor — `formRules` is read from here when present. */
+  stringifiedSchema: string;
 }
 
-const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
+const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema, stringifiedSchema }) => {
   const { t } = useTranslation();
   const { encounterTypes } = useEncounterTypes();
   const { formUuid } = useParams<{ formUuid: string }>();
@@ -60,6 +60,9 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
   const [openSaveFormModal, setOpenSaveFormModal] = useState(false);
   const [saveState, setSaveState] = useState('');
   const [version, setVersion] = useState('');
+  const [formRulesText, setFormRulesText] = useState('');
+  const [formRulesError, setFormRulesError] = useState<string | undefined>();
+  const saveModalWasOpen = useRef(false);
 
   const clearDraftFormSchema = useCallback(() => localStorage.removeItem('formJSON'), []);
 
@@ -71,6 +74,37 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
       setVersion(schema.version);
     }
   }, [schema]);
+
+  /** When the save modal opens, pre-fill rules from schema editor JSON, then parsed schema. */
+  useEffect(() => {
+    if (openSaveFormModal) {
+      if (!saveModalWasOpen.current) {
+        const display = getFormRulesDisplayText(stringifiedSchema, schema);
+        setFormRulesText(display);
+        const initial = validateFormRulesText(display);
+        if (isFormRulesValidationFailure(initial)) {
+          setFormRulesError(initial.error);
+        } else {
+          setFormRulesError(undefined);
+        }
+      }
+      saveModalWasOpen.current = true;
+    } else {
+      saveModalWasOpen.current = false;
+    }
+  }, [openSaveFormModal, stringifiedSchema, schema]);
+
+  const onFormRulesChange = useCallback((value: string) => {
+    setFormRulesText(value);
+    const result = validateFormRulesText(value);
+    if (isFormRulesValidationFailure(result)) {
+      setFormRulesError(result.error);
+    } else {
+      setFormRulesError(undefined);
+    }
+  }, []);
+
+  const formRulesBlockingSave = Boolean(formRulesText.trim() && formRulesError);
 
   const checkVersionValidity = (version: string) => {
     if (!version) return setIsInvalidVersion(false);
@@ -95,6 +129,9 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!schema) {
+      return;
+    }
     setIsSavingForm(true);
 
     const target = event.target as EventTarget & {
@@ -104,6 +141,19 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
       description: { value: string };
     };
 
+    let parsedFormRules: unknown | null;
+    const rulesResult = validateFormRulesText(formRulesText);
+    if (isFormRulesValidationFailure(rulesResult)) {
+      showSnackbar({
+        title: t('invalidFormRulesJson', 'Invalid form rules JSON'),
+        kind: 'error',
+        subtitle: rulesResult.error,
+      });
+      setIsSavingForm(false);
+      return;
+    }
+    parsedFormRules = rulesResult.value;
+
     if (saveState === 'new' || saveState === 'newVersion') {
       const name = target.name.value,
         version = target.version.value,
@@ -111,9 +161,9 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
         description = target.description.value;
 
       try {
-        const newForm = await saveNewForm(name, version, false, description, encounterType);
+        const newForm = await saveNewForm(name, version, false, description, encounterType, parsedFormRules);
 
-        const updatedSchema = {
+        const updatedSchema: Schema = {
           ...schema,
           name: name,
           version: version,
@@ -121,10 +171,15 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
           encounterType: encounterType,
           uuid: newForm.uuid,
         };
+        if (parsedFormRules !== null) {
+          updatedSchema.formRules = parsedFormRules as Schema['formRules'];
+        } else {
+          delete updatedSchema.formRules;
+        }
 
         let newValueReference: string | undefined;
         try {
-          newValueReference = (await uploadSchema(updatedSchema)).toString();
+          newValueReference = (await uploadSchema(schemaWithoutFormRulesForClobdataUpload(updatedSchema))).toString();
           await getResourceUuid(newForm.uuid, newValueReference);
         } catch (error) {
           // Clean up the orphaned clobdata and form since schema upload or linking failed
@@ -163,22 +218,33 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
       }
     } else {
       try {
-        const updatedSchema = {
+        if (!form?.uuid) {
+          throw new Error('Missing form metadata');
+        }
+
+        const updatedSchema: Schema = {
           ...schema,
           name: name,
           version: version,
           description: description,
           encounterType: encounterType,
         };
+        if (parsedFormRules !== null) {
+          updatedSchema.formRules = parsedFormRules as Schema['formRules'];
+        } else {
+          delete updatedSchema.formRules;
+        }
 
-        await updateForm(form.uuid, name, version, description, encounterType);
+        await updateForm(form.uuid, name, version, description, encounterType, parsedFormRules);
 
         const oldResource = form?.resources?.length
           ? form.resources.find(({ name }) => name === 'JSON schema')
           : undefined;
 
         // Upload the new clobdata first (doesn't affect the live form yet)
-        const newValueReference = (await uploadSchema(updatedSchema)).toString();
+        const newValueReference = (
+          await uploadSchema(schemaWithoutFormRulesForClobdataUpload(updatedSchema))
+        ).toString();
 
         // Swap: remove old resource link, then link the new clobdata.
         // If the swap fails, clean up the newly uploaded clobdata.
@@ -254,7 +320,7 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
 
       <ComposedModal open={openSaveFormModal} onClose={() => setOpenSaveFormModal(false)} preventCloseOnClickOutside>
         <ModalHeader title={t('saveFormToServer', 'Save form to server')} />
-        <Form onSubmit={handleSubmit} className={styles.saveFormBody}>
+        <CarbonForm onSubmit={handleSubmit} className={styles.saveFormBody}>
           <ModalBody>
             <p>
               {t(
@@ -327,6 +393,21 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
                   required
                   value={description}
                 />
+                <TextArea
+                  labelText={t('formRulesJson', 'Context / visibility rules (JSON)')}
+                  helperText={t(
+                    'formRulesHelper',
+                    'Optional. Stored as server metadata (formRules). Only these keys are allowed: {{keys}}. Wrong types or extra keys are rejected.',
+                    { keys: FORM_VISIBILITY_RULE_KEYS.join(', ') },
+                  )}
+                  onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => onFormRulesChange(event.target.value)}
+                  id="formRules"
+                  placeholder={t('formRulesPlaceholder', '{"locationTags":["ER"],"visitTypeUuids":["…uuid…"]}')}
+                  value={formRulesText}
+                  rows={5}
+                  invalid={Boolean(formRulesError)}
+                  invalidText={formRulesError}
+                />
               </Stack>
             </FormGroup>
           </ModalBody>
@@ -335,7 +416,7 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
               {t('close', 'Close')}
             </Button>
             <Button
-              disabled={isSavingForm || isInvalidVersion}
+              disabled={isSavingForm || isInvalidVersion || formRulesBlockingSave}
               className={styles.spinner}
               type={'submit'}
               kind={'primary'}
@@ -347,7 +428,7 @@ const SaveFormModal: React.FC<SaveFormModalProps> = ({ form, schema }) => {
               )}
             </Button>
           </ModalFooter>
-        </Form>
+        </CarbonForm>
       </ComposedModal>
 
       <Button
