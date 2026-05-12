@@ -19,13 +19,15 @@
     "test-e2e": "playwright test",
     "verify": "turbo run lint typescript coverage --color",
     "coverage": "yarn test --coverage --passWithNoTests",
-    "postinstall": "node ./tools/patch-openmrs-localhost-mf.js && husky install",
+    "postinstall": "node ./tools/postinstall.cjs",
     "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.modal.tsx' --config ./tools/i18next-parser.config.js",
     "ci:bump-form-engine-lib": "yarn up @openmrs/esm-form-engine-lib@latest"
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "tools/postinstall.cjs",
+    "tools/patch-openmrs-localhost-mf.js"
   ],
   "browserslist": [
     "extends browserslist-config-openmrs"
