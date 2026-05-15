@@ -8,6 +8,9 @@ export default defineConfig({
     alias: [{ find: /^.*\.s?css$/, replacement: 'identity-obj-proxy' }],
   },
   test: {
+    env: {
+      TZ: 'UTC',
+    },
     environment: 'jsdom',
     globals: true,
     clearMocks: true,
