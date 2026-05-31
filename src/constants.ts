@@ -44,13 +44,17 @@ export const renderingTypes: Array<RenderType> = [
   'select-concept-answers',
 ];
 
+// Render types that are ONLY valid for obs questions — must not appear under
+// encounter or any other question type's rendering picker.
+export const obsOnlyRenderingTypes: Array<RenderType> = ['bed-select', 'multi-provider-select'];
+
 export const renderTypeOptions: Record<QuestionType, Array<RenderType>> = {
   control: ['text', 'markdown'],
   encounterDatetime: ['date', 'datetime'],
   encounterLocation: ['ui-select-extended'],
   encounterProvider: ['ui-select-extended'],
   encounterRole: ['ui-select-extended'],
-  obs: renderingTypes,
+  obs: [...renderingTypes, ...obsOnlyRenderingTypes],
   obsGroup: ['group', 'repeating'],
   personAttribute: ['text', 'select', 'date', 'radio', 'checkbox', 'textarea', 'toggle', 'ui-select-extended'],
   testOrder: ['group', 'repeating'],
