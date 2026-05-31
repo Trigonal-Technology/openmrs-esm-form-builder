@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import Question from './question.component';
 import { FormFieldProvider } from '../../form-field-context';
 import type { FormField } from '@openmrs/esm-form-engine-lib';
-import { renderingTypes } from '@constants';
+import { obsOnlyRenderingTypes, renderTypeOptions } from '@constants';
 
 const initialFormField: FormField = {
   id: 'testId',
@@ -306,12 +306,34 @@ describe('Question Component', () => {
       (option) => option.value && option.value !== '',
     );
 
-    expect(options).toHaveLength(renderingTypes.length);
+    // obs offers the shared rendering types plus the obs-only render types (bed-select, multi-provider-select)
+    expect(options).toHaveLength(renderTypeOptions.obs.length);
 
     const optionTexts = options.map((option) => option.textContent);
 
-    renderingTypes.forEach((renderType) => {
+    renderTypeOptions.obs.forEach((renderType) => {
       expect(optionTexts).toContain(renderType);
+    });
+
+    // the obs-only render types must be present for obs
+    obsOnlyRenderingTypes.forEach((renderType) => {
+      expect(optionTexts).toContain(renderType);
+    });
+  });
+
+  it('should not show obs-only rendering types for non-obs question types', async () => {
+    renderWithFormFieldProvider(<Question checkIfQuestionIdExists={checkIfQuestionIdExists} />, {
+      formField: { ...initialFormField, type: 'encounterProvider' },
+    });
+
+    const renderingTypeSelect = screen.getByLabelText(/rendering type/i);
+    const options = (within(renderingTypeSelect).getAllByRole('option') as HTMLOptionElement[]).filter(
+      (option) => option.value && option.value !== '',
+    );
+    const optionTexts = options.map((option) => option.textContent);
+
+    obsOnlyRenderingTypes.forEach((renderType) => {
+      expect(optionTexts).not.toContain(renderType);
     });
   });
 
