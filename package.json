@@ -50,7 +50,6 @@
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
-    "@openmrs/esm-form-engine-lib": "next",
     "ajv": "^8.17.1",
     "dotenv": "^16.4.5",
     "file-loader": "^6.2.0",
@@ -73,6 +72,7 @@
     "@dnd-kit/modifiers": "^6.0.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@openmrs/esm-form-engine-lib": "file:./vendor/openmrs-esm-form-engine-lib-4.1.0.tgz",
     "@openmrs/esm-framework": "next",
     "@openmrs/esm-styleguide": "next",
     "@playwright/test": "^1.50.1",
