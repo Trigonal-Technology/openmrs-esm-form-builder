@@ -74,6 +74,12 @@ export interface Concept {
   conceptClass?: { display?: string };
   answers?: Array<ConceptAnswer>;
   allowDecimal?: boolean;
+  /**
+   * Complex-obs handler string (e.g. `NidanBedHandler`, `NidanProviderHandler`) exposed by the
+   * REST concept representation for ConceptComplex. Used to restrict the backing-concept search
+   * for handler-specific rendering types (bed-select, multi-provider-select).
+   */
+  handler?: string;
 }
 
 export interface ConceptAnswer {

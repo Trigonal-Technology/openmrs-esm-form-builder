@@ -162,13 +162,13 @@ const Question: React.FC<QuestionProps> = ({ checkIfQuestionIdExists }) => {
         {!formField.questionOptions?.rendering && (
           <SelectItem text={t('chooseRenderingType', 'Choose a rendering type')} value="" />
         )}
-        {formField.type &&
-        formField.type !== 'obs' &&
-        questionTypes.includes(formField.type as keyof typeof renderTypeOptions)
-          ? renderTypeOptions[formField?.type].map((type, key) => (
-              <SelectItem key={`${type}-${key}`} text={type} value={type} />
-            ))
-          : renderingTypes.map((type, key) => <SelectItem key={key} text={type} value={type} />)}
+        {formField.type === 'obs'
+          ? renderTypeOptions.obs.map((type, key) => <SelectItem key={`${type}-${key}`} text={type} value={type} />)
+          : formField.type && questionTypes.includes(formField.type as keyof typeof renderTypeOptions)
+            ? renderTypeOptions[formField?.type].map((type, key) => (
+                <SelectItem key={`${type}-${key}`} text={type} value={type} />
+              ))
+            : renderingTypes.map((type, key) => <SelectItem key={key} text={type} value={type} />)}
       </Select>
       {formField.questionOptions && formField.questionOptions.rendering !== 'markdown' && (
         <>

@@ -18,6 +18,7 @@ const allowedQuestionTypes: Array<QuestionType> = [
 
 const allowedFieldTypes: Array<RenderType> = [
   'checkbox',
+  'bed-select',
   'checkbox-searchable',
   'content-switcher',
   'date',
@@ -25,6 +26,7 @@ const allowedFieldTypes: Array<RenderType> = [
   'drug',
   'encounter-location',
   'encounter-provider',
+  'multi-provider-select',
   'encounter-role',
   'fixed-value',
   'file',
@@ -94,7 +96,9 @@ export const configSchema = {
         'drug',
         'problem',
         'encounter-provider',
+        'multi-provider-select',
         'encounter-location',
+        'bed-select',
         'select-concept-answers',
         'encounter-role',
         'multiCheckbox',

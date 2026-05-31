@@ -16,6 +16,11 @@ interface ConceptSearchProps {
   onSelectConcept: (concept: Concept) => void;
   retainConceptInContextAfterSearch?: boolean;
   clearSearchAfterSelection?: boolean;
+  /**
+   * When set, restricts results to ConceptComplex concepts whose complex-obs handler matches
+   * (e.g. `NidanBedHandler` for bed-select, `NidanProviderHandler` for multi-provider-select).
+   */
+  handler?: string;
 }
 
 const ConceptSearch: React.FC<ConceptSearchProps> = ({
@@ -25,11 +30,12 @@ const ConceptSearch: React.FC<ConceptSearchProps> = ({
   onSelectConcept,
   retainConceptInContextAfterSearch = false,
   clearSearchAfterSelection = false,
+  handler,
 }) => {
   const { t } = useTranslation();
   const [conceptToLookup, setConceptToLookup] = useState('');
   const debouncedConceptToLookup = useDebounce(conceptToLookup);
-  const { concepts, conceptLookupError, isLoadingConcepts } = useConceptLookup(debouncedConceptToLookup);
+  const { concepts, conceptLookupError, isLoadingConcepts } = useConceptLookup(debouncedConceptToLookup, handler);
   const {
     concept: initialConcept,
     conceptName,

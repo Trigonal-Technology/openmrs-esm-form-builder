@@ -3,12 +3,23 @@ import { FormLabel, InlineNotification, FormGroup, Stack, Checkbox } from '@carb
 import { useTranslation } from 'react-i18next';
 import ConceptSearch from '../../../common/concept-search/concept-search.component';
 import { useFormField } from '../../../../form-field-context';
+import type { RenderType } from '@openmrs/esm-form-engine-lib';
 import type { Concept, ConceptMapping, DatePickerType } from '@types';
 import styles from './obs-type-question.scss';
+
+// Rendering types backed by a complex-obs handler: the backing-concept search is restricted to
+// ConceptComplex concepts whose handler matches, so authors can only pick valid concepts.
+const conceptHandlerByRendering: Partial<Record<RenderType, string>> = {
+  'bed-select': 'NidanBedHandler',
+  'multi-provider-select': 'NidanProviderHandler',
+};
 
 const ObsTypeQuestion: React.FC = () => {
   const { t } = useTranslation();
   const { formField, setFormField, concept, setConcept } = useFormField();
+  const conceptHandler = formField.questionOptions?.rendering
+    ? conceptHandlerByRendering[formField.questionOptions.rendering]
+    : undefined;
   const [selectedMapping, setSelectedMapping] = useState<string | null>(null);
 
   useEffect(() => {
@@ -115,6 +126,7 @@ const ObsTypeQuestion: React.FC = () => {
         onClearSelectedConcept={clearSelectedConcept}
         onSelectConcept={handleConceptSelect}
         retainConceptInContextAfterSearch={true}
+        handler={conceptHandler}
       />
 
       {concept?.allowDecimal === false && (
