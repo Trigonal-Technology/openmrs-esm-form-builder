@@ -135,8 +135,7 @@ describe('Question Component', () => {
     expect(requiredRadio).not.toBeChecked();
   });
 
-  it('should show only date and datetime rendering types for encounterDatetime question type', async () => {
-    const user = userEvent.setup();
+  it('should show date, datetime, and Bikram Sambat rendering types for encounterDatetime question type', async () => {
     renderWithFormFieldProvider(<Question checkIfQuestionIdExists={checkIfQuestionIdExists} />, {
       formField: { ...initialFormField, type: 'encounterDatetime' },
     });
@@ -149,9 +148,14 @@ describe('Question Component', () => {
       (option) => option.value && option.value !== '',
     );
 
-    expect(options).toHaveLength(2);
-    expect(options[0]).toHaveTextContent('date');
-    expect(options[1]).toHaveTextContent('datetime');
+    expect(options.map((option) => option.value)).toEqual([
+      'date',
+      'datetime',
+      'bs-date',
+      'bs-datetime',
+      'bs-date-with-ad',
+      'bs-datetime-with-ad',
+    ]);
   });
 
   it('should show only text and markdown rendering types for control question type', async () => {

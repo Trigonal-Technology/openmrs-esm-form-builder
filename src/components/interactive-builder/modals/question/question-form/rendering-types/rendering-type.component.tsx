@@ -1,10 +1,10 @@
 import React from 'react';
 import { Date, Markdown, Number, SelectAnswers, Text, TextArea, Toggle, UiSelectExtended } from './inputs';
 import { useFormField } from '../../form-field-context';
-import type { RenderType } from '@openmrs/esm-form-engine-lib';
+import type { NidanRenderType } from '@types';
 import { renderTypeOptions } from '@constants';
 
-const componentMap: Partial<Record<RenderType, React.FC>> = {
+const componentMap: Partial<Record<NidanRenderType, React.FC>> = {
   number: Number,
   text: Text,
   textarea: TextArea,
@@ -12,6 +12,11 @@ const componentMap: Partial<Record<RenderType, React.FC>> = {
   'ui-select-extended': UiSelectExtended,
   date: Date,
   datetime: Date,
+  // Bikram Sambat controls reuse the date picker-format config (calendar/timer/both).
+  'bs-date': Date,
+  'bs-datetime': Date,
+  'bs-date-with-ad': Date,
+  'bs-datetime-with-ad': Date,
   markdown: Markdown,
   select: SelectAnswers,
   radio: SelectAnswers,
