@@ -1,6 +1,5 @@
 import { Type, validators } from '@openmrs/esm-framework';
-import { type RenderType } from '@openmrs/esm-form-engine-lib';
-import type { QuestionType } from '@types';
+import type { NidanRenderType, QuestionType } from '@types';
 
 const allowedQuestionTypes: Array<QuestionType> = [
   'control',
@@ -16,13 +15,17 @@ const allowedQuestionTypes: Array<QuestionType> = [
   'programState',
 ];
 
-const allowedFieldTypes: Array<RenderType> = [
+const allowedFieldTypes: Array<NidanRenderType> = [
   'checkbox',
   'bed-select',
   'checkbox-searchable',
   'content-switcher',
   'date',
   'datetime',
+  'bs-date',
+  'bs-datetime',
+  'bs-date-with-ad',
+  'bs-datetime-with-ad',
   'drug',
   'encounter-location',
   'encounter-provider',
@@ -116,14 +119,14 @@ export const configSchema = {
       _elements: {
         _type: Type.String,
       },
-      _default: ['date', 'fixed-value'],
+      _default: ['date', 'bs-date', 'bs-date-with-ad', 'fixed-value'],
     },
     Datetime: {
       _type: Type.Array,
       _elements: {
         _type: Type.String,
       },
-      _default: ['datetime', 'fixed-value'],
+      _default: ['datetime', 'bs-datetime', 'bs-datetime-with-ad', 'fixed-value'],
     },
     Boolean: {
       _type: Type.Array,
@@ -168,7 +171,7 @@ export const configSchema = {
 
 export interface ConfigObject {
   questionTypes: Array<QuestionType>;
-  fieldTypes: Array<RenderType>;
+  fieldTypes: Array<NidanRenderType>;
   showSchemaSaveWarning: boolean;
   dataTypeToRenderingMap: Record<string, Array<string>>;
   enableFormValidation: boolean;

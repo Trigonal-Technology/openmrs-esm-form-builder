@@ -1,7 +1,17 @@
 import type { OpenmrsResource } from '@openmrs/esm-framework';
-import type { FormSchema, ProgramState } from '@openmrs/esm-form-engine-lib';
+import type { FormSchema, ProgramState, RenderType } from '@openmrs/esm-form-engine-lib';
 import type { AuditInfo } from './components/audit-details/audit-details.component';
 import type { questionTypes } from '@constants';
+
+/**
+ * Bikram Sambat (Nepali) date render types. These are custom form-engine controls
+ * registered at runtime by `nidan-esm-nepali-calendar`, so they are not part of the
+ * upstream `RenderType` union — we widen it locally for the builder's pickers and config.
+ */
+export type BsRenderType = 'bs-date' | 'bs-datetime' | 'bs-date-with-ad' | 'bs-datetime-with-ad';
+
+/** `RenderType` widened with the nidan custom controls the builder must be able to author. */
+export type NidanRenderType = RenderType | BsRenderType;
 
 // Extend FormSchema to include description property
 export interface FormBuilderSchema extends FormSchema {
